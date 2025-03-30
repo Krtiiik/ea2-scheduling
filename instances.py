@@ -4,6 +4,8 @@ from typing import IO, Iterable, Optional, Collection, Self, Sequence, TypeVar
 from collections import defaultdict
 from enum import StrEnum
 
+from graphs import compute_ancestors, compute_descendants
+
 
 T = TypeVar('T')
 
@@ -496,13 +498,13 @@ class ProblemInstance:
             precedences (Collection[Precedence]): The collection of precedences in the problem instance.
             name (str, optional): The name of the problem instance. Defaults to None.
         """
-        self._name = name
+        self.name = name
 
-        self._horizon = horizon
+        self.horizon = horizon
 
-        self._resources = list_of(resources)
-        self._jobs = list_of(jobs)
-        self._precedences = list_of(precedences)
+        self.resources = list_of(resources)
+        self.jobs = list_of(jobs)
+        self.precedences = list_of(precedences)
 
     @property
     def name(self) -> Optional[str]:
@@ -647,6 +649,9 @@ class ProblemInstance:
             self._precedences_by_id_child[p.id_child] += [p]
             self._precedences_by_id_parent[p.id_parent] += [p]
 
+        self._successors_closure = compute_descendants(self)
+        self._predecessors_closure = compute_ancestors(self)
+
     @property
     def precedences_by_id_child(self) -> dict[int, Iterable[Precedence]]:
         """
@@ -668,6 +673,26 @@ class ProblemInstance:
         """
         # This is not recomputed automatically as it is hard to check
         return self._precedences_by_id_parent
+
+    @property
+    def successors_closure(self) -> dict[int, set[int]]:
+        """
+        Get the successors closure of the problem instance.
+
+        Returns:
+            dict[int, set[int]]: The successors closure of the problem instance.
+        """
+        return self._successors_closure
+
+    @property
+    def predecessors_closure(self) -> dict[int, set[int]]:
+        """
+        Get the predecessors closure of the problem instance.
+
+        Returns:
+            dict[int, set[int]]: The predecessors closure of the problem instance.
+        """
+        return self._predecessors_closure
 
     def copy(self) -> Self:
         """
