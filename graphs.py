@@ -1,9 +1,7 @@
 import networkx as nx
 
-from instances import ProblemInstance
 
-
-def build_instance_graph(instance: ProblemInstance, reverse: bool = False) -> nx.DiGraph:
+def build_instance_graph(instance, reverse: bool = False) -> nx.DiGraph:
     """
     Builds a job-graph of the given problem instance.
 
@@ -22,7 +20,7 @@ def build_instance_graph(instance: ProblemInstance, reverse: bool = False) -> nx
     return graph
 
 
-def compute_descendants(instance_or_graph: ProblemInstance | nx.DiGraph) -> dict[int, set[int]]:
+def compute_descendants(instance_or_graph) -> dict[int, set[int]]:
     """
     Computes the descendants of each job in the given instance or graph.
 
@@ -40,7 +38,7 @@ def compute_descendants(instance_or_graph: ProblemInstance | nx.DiGraph) -> dict
     return {node: set(graph.successors(node)) for node in graph.nodes}
 
 
-def compute_ancestors(instance_or_graph: ProblemInstance | nx.DiGraph) -> dict[int, set[int]]:
+def compute_ancestors(instance_or_graph) -> dict[int, set[int]]:
     """
     Computes the ancestors of each job in the given instance or graph.
 
