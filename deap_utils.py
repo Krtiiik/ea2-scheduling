@@ -22,6 +22,8 @@ class CrossOver:
             current = current[:pos] + [current[p2_pos_frajer_idx]] + current[pos:p2_pos_frajer_idx] + current[p2_pos_frajer_idx + 1:]
             candidates.append(current)
         print(len(candidates) - 1)
+        if len(candidates) == 0:
+            return p1
         return self.choose_best(candidates[:-1])
     
     def choose_best(self, candidates):
