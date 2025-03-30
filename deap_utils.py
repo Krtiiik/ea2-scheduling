@@ -9,7 +9,7 @@ from instances import ProblemInstance, parse_psplib
 
 @dataclass
 class CrossOver:
-    problem_instance: ProblemInstance
+    # problem_instance: ProblemInstance
     fitness_func: Callable[[list], float]
 
     def __call__(self, p1, p2):
@@ -33,10 +33,6 @@ class CrossOver:
                 best = c
                 best_score = score
         return best
-
-    def construct_next_on_path(self, current, move_after_idx, jobs_to_move):
-        return [x for x in current[:move_after_idx + 1] if x not in jobs_to_move]\
-            + jobs_to_move + current[move_after_idx + 1:]
 
 
 def generate_population(instance: ProblemInstance, population_size: int):
@@ -96,10 +92,9 @@ def generate_individual_genotype(initial_counter: dict, precedence_graph: dict):
             
 instance = parse_psplib("data/j302_10.sm")
 pop = generate_population(instance, 100)
-from pprint import pprint
-print(pop)
 
-cx = CrossOver(instance, lambda x: 1)
+
+cx = CrossOver(lambda x: 1)
 for i in range(100):
     for j in range(i + 1, 100):
         cx(pop[i], pop[j])
