@@ -13,42 +13,16 @@ class CrossOver:
     fitness_func: Callable[[list], float]
 
     def __call__(self, p1, p2):
-        tested_subset_breakers = defaultdict(set)
-        current = p1.copy()
         candidates = []
-        j_in_current = 0
-        # should_move = False
-        while current != p2:
-            # try next index
-            j_in_current = (j_in_current + 1) % len(current)
-            # print(current, p2, current[j_in_current])
-            j_in_p2 = p2.index(current[j_in_current])
-            Bj = set(current[:j_in_current])
-            j_successors = self.problem_instance.successors_closure[p1[j_in_current]]
-            assert type(j_successors) == set
-            # Now we try to check whether B'(j) is a subset of B(j)
-            # should_move = True
-            print("ahoj")
-            for subset_breaker in p2[:j_in_p2]:
-                if subset_breaker in Bj or subset_breaker in tested_subset_breakers[j_in_p2]:
-                    tested_subset_breakers[j_in_p2].add(subset_breaker)
-                    continue
-                print("cus")
-                tested_subset_breakers[j_in_p2].add(subset_breaker)
-                # J and all its successors must be moved after subset_breaker
-                move_after_idx = current.index(subset_breaker)
-                jobs_to_move = [current[j_in_current]] + [x for x in current[:move_after_idx] if x in j_successors]
-                
-                if len(candidates) > 0 or current != p1: # Makes sure we don't put p1 in the candidates
-                    candidates.append(current.copy())
-                
-                print(move_after_idx, jobs_to_move)
-                current = self.construct_next_on_path(current, move_after_idx, jobs_to_move)
-                print(len(current))
-                break
-                # should_move = False
-        
-        return self.choose_best(candidates[1:])
+        current = p1.copy()
+        for pos in range(len(p1)):
+            if current[pos] == p2[pos]:
+                continue
+            p2_pos_frajer_idx = current.index(p2[pos])
+            current = current[:pos] + [current[p2_pos_frajer_idx]] + current[pos:p2_pos_frajer_idx] + current[p2_pos_frajer_idx + 1:]
+            candidates.append(current)
+        print(len(candidates) - 1)
+        return self.choose_best(candidates[:-1])
     
     def choose_best(self, candidates):
         best = None
@@ -121,13 +95,14 @@ def generate_individual_genotype(initial_counter: dict, precedence_graph: dict):
 
             
 instance = parse_psplib("data/j302_10.sm")
-pop = generate_population(instance, 10)
+pop = generate_population(instance, 100)
 from pprint import pprint
 print(pop)
 
 cx = CrossOver(instance, lambda x: 1)
-cx(pop[0], pop[2])
-
+for i in range(100):
+    for j in range(i + 1, 100):
+        cx(pop[i], pop[j])
 
 # def eval_func(individual):
 #     return sum(individual),  
