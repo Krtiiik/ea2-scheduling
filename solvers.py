@@ -13,9 +13,11 @@ class SolutionKind(Enum):
     FEASIBLE = "feasible"
     INFEASIBLE = "infeasible"
 
+Schedule = dict[Job|int, int]  # Job -> start time
+
 class Solution(typing.TypedDict):
     kind: SolutionKind
-    schedule: dict[Job, int] | None
+    schedule: Schedule | None
     makespan: int | None
 
 
@@ -46,15 +48,3 @@ class Solver:
             solution = self.solve(instance)
             solutions.append(solution)
         return solutions
-
-
-class EvolutionSolver(Solver):
-    def __init__(self):
-        super().__init__()
-
-    def solve(self, instance):
-        """
-        Solve the given instance using the evolutionary method.
-        """
-        # TODO
-        ...
