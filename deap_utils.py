@@ -1,5 +1,9 @@
+from collections import Counter, defaultdict
 import random
+
 from deap import base, creator, tools, algorithms
+
+from instances import ProblemInstance
 
 class CrossOver:
     def __call__(self, p1, p2, problem, fitness_func):
@@ -40,7 +44,58 @@ class CrossOver:
 
     def construct_next_on_path(self, current, move_after_idx, jobs_to_move):
         return [x for x in current[:move_after_idx] if x not in jobs_to_move]\
-            + jobs_to_move + current[move_after_idx:]            
+            + jobs_to_move + current[move_after_idx:]
+
+
+def generate_population(instance: ProblemInstance, population_size: int):
+    initial_counter, precedence_graph = build_precedence_graph(instance)
+    population = [
+        generate_individual_genotype(initial_counter, precedence_graph)
+        for _ in range(population_size)
+    ]
+    return population
+
+
+def build_precedence_graph(instance: ProblemInstance):
+    """
+    Constructs a precedence graph and counts the number of times
+    each job appears as a parent in the precedence relations.
+    """
+    counter = defaultdict(int)
+    precedence_graph = defaultdict(list)
+
+    for relation in instance.precedences:
+        # Map each child to its parent (or add to list if multiple)
+        precedence_graph[relation.id_child].append(relation.id_parent)
+        counter[relation.id_parent] += 1
+
+    return counter, precedence_graph
+
+
+def generate_individual_genotype(initial_counter: dict, precedence_graph: dict):
+    """
+    Generates a single genotype (job sequence) satisfying the given precedence.
+    """
+    counter = initial_counter.copy()
+    genotype = []
+    # Jobs with no prerequisites (or not appearing as parents) are initially available.
+    available_jobs = [job for job, count in counter.items() if count == 0]
+
+    while available_jobs:
+        chosen_index = random.randint(0, len(available_jobs) - 1)
+        # Swap chosen job with the last to efficiently pop it.
+        available_jobs[-1], available_jobs[chosen_index] = available_jobs[chosen_index], available_jobs[-1]
+        chosen_job = available_jobs.pop()
+        genotype.append(chosen_job)
+
+        # After scheduling a job, update the counter for its connected jobs.
+        for parent in precedence_graph.get(chosen_job, []):
+            counter[parent] -= 1
+            if counter[parent] == 0:
+                available_jobs.append(parent)
+
+    return genotype
+
             
         
 
