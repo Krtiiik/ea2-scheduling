@@ -1,8 +1,12 @@
 from collections import defaultdict
+import random
+
+from deap import base, creator, tools, algorithms
 
 from instances import ProblemInstance, Resource
 from plotting import plot_gantt_chart
 from solvers import Schedule, Solver
+import deap_utils as du
 
 
 ActivityList = list[int]  # List of activities
@@ -13,7 +17,7 @@ class SerialScheduleGenerationSchemeDecoder:
         self._debug = False
         pass
 
-    def __call__(self, individual: ActivityList, instance: ProblemInstance) -> Schedule:
+    def __call__(self, individual: ActivityList, instance: ProblemInstance) -> tuple[Schedule, int]:
         """
         Decode the individual into a schedule.
         Using the Serial Schedule Generation Scheme.
@@ -29,20 +33,22 @@ class SerialScheduleGenerationSchemeDecoder:
 
         schedule: Schedule = {}
         for j in individual:
-            self._debug_print(f"Processing job {j}")
+            # self._debug_print(f"Processing job {j}")
             earliest_start = max((schedule[pred] + self.durations[pred] for pred in predecessors[j]),
                                  default=0)
-            self._debug_print(f"  Earliest start time: {earliest_start}")
+            # self._debug_print(f"  Earliest start time: {earliest_start}")
             assert earliest_start < instance.horizon, f"Job {j} cannot start at {earliest_start}"
             possible_starts = self._possible_starts(j, earliest_start)
-            self._debug_print(f"  Possible start times: {possible_starts}")
+            # self._debug_print(f"  Possible start times: {possible_starts}")
             assert possible_starts, f"No possible start times for job {j}"
             start = min(t for t in possible_starts)
-            self._debug_print(f"  Selected start time: {start}")
+            # self._debug_print(f"  Selected start time: {start}")
             schedule[j] = start
             self._decrease_capacities(j, start)
-            self._debug_print(f'  Updated capacities: {self.capacities}')
-        return schedule
+            # self._debug_print(f'  Updated capacities: {self.capacities}')
+
+        makespan = max(start + self.durations[j] for j, start in schedule.items())
+        return schedule, makespan
 
     def _possible_starts(self, j: int, start: int) -> list[int]:
         """Compute the possible start times for job _j."""
@@ -55,7 +61,7 @@ class SerialScheduleGenerationSchemeDecoder:
         r_capacities = {}
         for resource in self.instance.resources:
             capacities = [True] * self.instance.horizon
-            consumption = self.instance.jobs_by_id[j].resource_consumption.get(resource.id_resource, 0)
+            consumption = self.instance.jobs_by_id[j].resource_consumption.consumption_by_resource.get(resource.id_resource, 0)
             if consumption == 0:
                 r_capacities[resource] = capacities
                 continue
@@ -63,7 +69,7 @@ class SerialScheduleGenerationSchemeDecoder:
                 if capacities[t] and self.capacities[resource][t] < consumption:
                     capacities[t] = False
             r_capacities[resource] = capacities
-        self._debug_print(f"  Resource capacities\n\t{r_capacities}")
+        # self._debug_print(f"  Resource capacities\n\t{r_capacities}")
         return r_capacities
 
     def _capacities_overhead(self, r_capacities: dict[Resource, list[bool]], _start: int) -> int:
@@ -79,7 +85,7 @@ class SerialScheduleGenerationSchemeDecoder:
                     overhead = 0
                 overheads[t] = overhead
             r_overheads[_resource] = overheads
-        self._debug_print(f"  Resource overheads\n\t{r_overheads}")
+        # self._debug_print(f"  Resource overheads\n\t{r_overheads}")
         return r_overheads
 
     def _decrease_capacities(self, j: int, start: int) -> None:
@@ -87,7 +93,7 @@ class SerialScheduleGenerationSchemeDecoder:
         consumption = self.instance.jobs_by_id[j].resource_consumption
         for t in range(start, start + self.durations[j]):
             for resource in self.instance.resources:
-                self.capacities[resource][t] -= consumption[resource.id_resource]
+                self.capacities[resource][t] -= consumption[resource]
 
     def _debug_print(self, message: str) -> None:
         """Print debug messages."""
@@ -95,9 +101,17 @@ class SerialScheduleGenerationSchemeDecoder:
             print(message)
 
 
+EVO_SETTINGS = {
+    "population_size": 100,
+    "max_gen": 100,
+    "tournament_size": 3,
+}
+
+
 class EvolutionSolver(Solver):
     def __init__(self):
         super().__init__()
+        
         self._decoder = SerialScheduleGenerationSchemeDecoder()
 
     def solve(self, instance):
@@ -105,7 +119,42 @@ class EvolutionSolver(Solver):
         Solve the given instance using the evolutionary method.
         """
         # TODO
-        ...
+        pop = du.generate_population(instance, EVO_SETTINGS["population_size"])
+        _cx = du.CrossOver(lambda ind: self._fitness(ind, instance))
+        def cx(mating_pool):
+            random.shuffle(mating_pool)
+            return mating_pool + [_cx(ind1, ind2)
+                                  for ind1, ind2 in zip(mating_pool[::2], mating_pool[1::2])]
+        # mut = du.Mutation(self._fitness)
+        def select(pop, fits): return [self._select_tournament(pop, fits) for _ in range(EVO_SETTINGS["population_size"])]
+
+        log = []
+        print("EVO")
+        for gen in range(EVO_SETTINGS["max_gen"]):
+            print(f'{gen+1}/{EVO_SETTINGS["max_gen"]}', end='\r')
+            fits = [self._fitness(ind, instance) for ind in pop]
+            log.append(min(fits))
+            mating_pool = select(pop, fits)
+            off = cx(mating_pool)
+            # off = mutation(off)
+            off[0] = min(pop, key=lambda ind: self._fitness(ind, instance))
+            pop = off[:]
+
+        return pop, log
+
+    def _select_tournament(self, population: list[ActivityList], fitnesses: list[int]) -> ActivityList:
+        candidates_ids = random.sample(range(EVO_SETTINGS["population_size"]), EVO_SETTINGS["tournament_size"])
+        candidates = [population[i] for i in candidates_ids]
+        candidates_fitnesses = [fitnesses[i] for i in candidates_ids]
+        best_i = min(((fitn, i) for i, fitn in enumerate(candidates_fitnesses)), key=lambda x: x[0])[1]
+        return candidates[best_i]
+
+    def _fitness(self, individual: ActivityList, instance) -> int:
+        """
+        Compute the fitness of the individual.
+        """
+        schedule, makespan = self._decoder(individual, instance)
+        return makespan
 
 
 if __name__ == "__main__":

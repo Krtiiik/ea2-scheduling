@@ -44,7 +44,9 @@ class Solver:
         """
         print(f"Solving {len(instances)} instances")
         solutions = []
-        for instance in instances:
+        for i, instance in enumerate(instances):
+            print(f'{i + 1}/{len(instances)}: {instance.name}', end='\r')
             solution = self.solve(instance)
             solutions.append(solution)
+        print("Done")
         return solutions
