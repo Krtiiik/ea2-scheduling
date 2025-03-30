@@ -1,50 +1,68 @@
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 import random
+from typing import Callable
 
 from deap import base, creator, tools, algorithms
 
-from instances import ProblemInstance
+from instances import ProblemInstance, parse_psplib
 
+@dataclass
 class CrossOver:
-    def __call__(self, p1, p2, problem, fitness_func):
+    problem_instance: ProblemInstance
+    fitness_func: Callable[[list], float]
+
+    def __call__(self, p1, p2):
+        tested_subset_breakers = defaultdict(set)
         current = p1.copy()
         candidates = []
         j_in_current = 0
+        # should_move = False
         while current != p2:
             # try next index
             j_in_current = (j_in_current + 1) % len(current)
+            # print(current, p2, current[j_in_current])
             j_in_p2 = p2.index(current[j_in_current])
             Bj = set(current[:j_in_current])
-            j_succeros = problem.successors(current[j_in_current])
+            j_successors = self.problem_instance.successors_closure[p1[j_in_current]]
+            assert type(j_successors) == set
             # Now we try to check whether B'(j) is a subset of B(j)
-            for subset_breaker in p2[:j_in_p2]: 
-                if subset_breaker in Bj:
+            # should_move = True
+            print("ahoj")
+            for subset_breaker in p2[:j_in_p2]:
+                if subset_breaker in Bj or subset_breaker in tested_subset_breakers[j_in_p2]:
+                    tested_subset_breakers[j_in_p2].add(subset_breaker)
                     continue
+                print("cus")
+                tested_subset_breakers[j_in_p2].add(subset_breaker)
                 # J and all its successors must be moved after subset_breaker
                 move_after_idx = current.index(subset_breaker)
-                jobs_to_move = [current[j_in_current]] + [x for x in current[:move_after_idx] if x in j_succeros]
+                jobs_to_move = [current[j_in_current]] + [x for x in current[:move_after_idx] if x in j_successors]
                 
                 if len(candidates) > 0 or current != p1: # Makes sure we don't put p1 in the candidates
                     candidates.append(current.copy())
                 
+                print(move_after_idx, jobs_to_move)
                 current = self.construct_next_on_path(current, move_after_idx, jobs_to_move)
+                print(len(current))
                 break
+                # should_move = False
         
-        return self.choose_best(candidates[1:], fitness_func)
+        return self.choose_best(candidates[1:])
     
-    def choose_best(candidates, fitness_func):
+    def choose_best(self, candidates):
         best = None
         best_score = float('inf')
         for c in candidates:
-            score = fitness_func(c)
+            score = self.fitness_func(c)
             if score < best_score:
                 best = c
                 best_score = score
         return best
 
     def construct_next_on_path(self, current, move_after_idx, jobs_to_move):
-        return [x for x in current[:move_after_idx] if x not in jobs_to_move]\
-            + jobs_to_move + current[move_after_idx:]
+        return [x for x in current[:move_after_idx + 1] if x not in jobs_to_move]\
+            + jobs_to_move + current[move_after_idx + 1:]
 
 
 def generate_population(instance: ProblemInstance, population_size: int):
@@ -61,12 +79,17 @@ def build_precedence_graph(instance: ProblemInstance):
     Constructs a precedence graph and counts the number of times
     each job appears as a parent in the precedence relations.
     """
-    counter = defaultdict(int)
+    counter = {}
     precedence_graph = defaultdict(list)
 
     for relation in instance.precedences:
         # Map each child to its parent (or add to list if multiple)
         precedence_graph[relation.id_child].append(relation.id_parent)
+
+        for v in (relation.id_child, relation.id_parent):
+            if v not in counter:
+                counter[v] = 0
+
         counter[relation.id_parent] += 1
 
     return counter, precedence_graph
@@ -97,35 +120,42 @@ def generate_individual_genotype(initial_counter: dict, precedence_graph: dict):
     return genotype
 
             
-        
+instance = parse_psplib("data/j302_10.sm")
+pop = generate_population(instance, 10)
+from pprint import pprint
+print(pop)
 
-def eval_func(individual):
-    return sum(individual),  
+cx = CrossOver(instance, lambda x: 1)
+cx(pop[0], pop[2])
 
-# Set up the DEAP framework
-creator.create("FitnessMin", base.Fitness, weights=(1.0,))
-creator.create("Individual", list, fitness=creator.FitnessMin)
 
-toolbox = base.Toolbox()
-toolbox.register("attr_float", random.uniform, 0, 10)
-toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=5)
-toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+# def eval_func(individual):
+#     return sum(individual),  
 
-toolbox.register("evaluate", eval_func)
-toolbox.register("mate", tools.cxBlend, alpha=0.5)
-toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.2)
-toolbox.register("select", tools.selTournament, tournsize=3)
+# # Set up the DEAP framework
+# creator.create("FitnessMin", base.Fitness, weights=(1.0,))
+# creator.create("Individual", list, fitness=creator.FitnessMin)
 
-# Main execution
-if __name__ == "__main__":
-    random.seed(42)
-    population = toolbox.population(n=50)
-    ngen, cxpb, mutpb = 100, 0.7, 0.2
+# toolbox = base.Toolbox()
+# toolbox.register("attr_float", random.uniform, 0, 10)
+# toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=5)
+# toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
-    algorithms.eaSimple(population, toolbox, cxpb, mutpb, ngen, 
-                        stats=None, halloffame=None, verbose=True)
+# toolbox.register("evaluate", eval_func)
+# toolbox.register("mate", tools.cxBlend, alpha=0.5)
+# toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.2)
+# toolbox.register("select", tools.selTournament, tournsize=3)
 
-    # Print the best individual and its fitness
-    best_ind = tools.selBest(population, k=100)[0]
-    print("Best individual is:", best_ind)
-    print("Fitness:", best_ind.fitness.values)
+# # Main execution
+# if __name__ == "__main__":
+#     random.seed(42)
+#     population = toolbox.population(n=50)
+#     ngen, cxpb, mutpb = 100, 0.7, 0.2
+
+#     algorithms.eaSimple(population, toolbox, cxpb, mutpb, ngen, 
+#                         stats=None, halloffame=None, verbose=True)
+
+#     # Print the best individual and its fitness
+#     best_ind = tools.selBest(population, k=100)[0]
+#     print("Best individual is:", best_ind)
+#     print("Fitness:", best_ind.fitness.values)
