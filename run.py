@@ -12,7 +12,8 @@ from plotting import plot_gantt_chart
 import solvers
 
 
-DATA_DIR = os.path.join("data", "j30.sm")
+# DATA_DIR = os.path.join("data", "j30.sm")
+DATA_DIR = os.path.join("data")
 RESULTS_DIR = "results"
 RESULTS = {
     "exact": os.path.join(RESULTS_DIR, "exact.pkl"),
@@ -31,6 +32,13 @@ def main(args):
     solver_evolution = EvolutionSolver()
     solver_exact.configure(CONFIGURATION, args)
     solver_evolution.configure(CONFIGURATION, args)
+
+    # with open(RESULTS["evolution"], "rb") as f:
+    #     solutions_evolution = pickle.load(f)
+    
+    # print(*solutions_evolution, sep="\n")
+
+    # raise Exception("Stop here")
 
     instances = load_instances(DATA_DIR)
 

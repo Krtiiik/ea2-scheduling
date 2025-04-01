@@ -102,8 +102,8 @@ class SerialScheduleGenerationSchemeDecoder:
 
 
 EVO_SETTINGS = {
-    "population_size": 100,
-    "max_gen": 100,
+    "population_size": 10,
+    "max_gen": 5,
     "tournament_size": 3,
 }
 
@@ -111,7 +111,6 @@ EVO_SETTINGS = {
 class EvolutionSolver(Solver):
     def __init__(self):
         super().__init__()
-        
         self._decoder = SerialScheduleGenerationSchemeDecoder()
 
     def solve(self, instance):
