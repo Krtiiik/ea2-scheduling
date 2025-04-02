@@ -6,34 +6,54 @@ from typing import Callable
 from deap import base, creator, tools, algorithms
 
 from instances import ProblemInstance, parse_psplib
+from typing import List, Tuple
 
 @dataclass
-class CrossOver:
-    # problem_instance: ProblemInstance
-    fitness_func: Callable[[list], float]
+class CrossOverPaper:
+    fitness_func: Callable[[List[int]], float]
 
-    def __call__(self, p1, p2):
-        candidates = []
-        current = p1.copy()
+    def __call__(self, p1: List[int], p2: List[int]) -> List[List[int]]:
+        candidates: List[List[int]] = []
+        current: List[int] = p1.copy()
         for pos in range(len(p1)):
             if current[pos] == p2[pos]:
                 continue
-            p2_pos_frajer_idx = current.index(p2[pos])
+            p2_pos_frajer_idx: int = current.index(p2[pos])
             current = current[:pos] + [current[p2_pos_frajer_idx]] + current[pos:p2_pos_frajer_idx] + current[p2_pos_frajer_idx + 1:]
             candidates.append(current)
         if len(candidates) <= 1:
-            return p1
-        return self.choose_best(candidates[:-1])
+            return [p1]
+        return [self.choose_best(candidates[:-1])]
 
-    def choose_best(self, candidates):
-        best = None
-        best_score = float('inf')
+    def choose_best(self, candidates: List[List[int]]) -> List[int]:
+        best: List[int] = []
+        best_score: float = float('inf')
         for c in candidates:
-            score = self.fitness_func(c)
+            score: float = self.fitness_func(c)
             if score < best_score:
                 best = c
                 best_score = score
         return best
+
+
+@dataclass
+class CrossoverMultipleCandidates:
+    max_candidates: int
+
+    def __call__(self, p1: List[int], p2: List[int]) -> List[List[int]]:
+        candidates: List[List[int]] = []
+        current: List[int] = p1.copy()
+        for pos in range(len(p1)):
+            if current[pos] == p2[pos]:
+                continue
+            p2_pos_frajer_idx: int = current.index(p2[pos])
+            current = current[:pos] + [current[p2_pos_frajer_idx]] + current[pos:p2_pos_frajer_idx] + current[p2_pos_frajer_idx + 1:]
+            candidates.append(current)
+        if len(candidates) <= 1:
+            return [p1]
+        candidates = candidates[:-1]
+        random.shuffle(candidates)    
+        return candidates[:self.max_candidates]
 
 
 def generate_population(instance: ProblemInstance, population_size: int):
@@ -95,7 +115,7 @@ instance = parse_psplib("data/j302_10.sm")
 pop = generate_population(instance, 100)
 
 
-cx = CrossOver(lambda x: 1)
+cx = CrossOverPaper(lambda x: 1)
 for i in range(100):
     for j in range(i + 1, 100):
         cx(pop[i], pop[j])
