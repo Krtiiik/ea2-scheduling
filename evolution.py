@@ -164,7 +164,8 @@ class EvolutionSolver(Solver):
             off[0] = min(pop, key=lambda ind: self._fitness(ind, instance))
             pop = off[:]
 
-        fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
+        with Pool() as pool:
+            fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
         best = min(fits)
         best_i = fits.index(best)
         best_ind = pop[best_i]
