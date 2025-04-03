@@ -53,9 +53,9 @@ def main(args):
     # TODO analyze solutions
     # save_results_table(instances, solutions_exact)
 
-    inst_ = "j3013_1.sm"
-    [(i, inst)] = [(i, inst) for i, inst in enumerate(instances) if inst.name == inst_]
-    inst = instances[i]
+    # inst_ = "j3013_1.sm"
+    # [(i, inst)] = [(i, inst) for i, inst in enumerate(instances) if inst.name == inst_]
+    # inst = instances[i]
     # solution = solutions_exact[i]
 
     # plot_gantt_chart(solution, inst)
