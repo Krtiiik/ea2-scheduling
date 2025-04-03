@@ -1,7 +1,33 @@
+from dataclasses import dataclass
 import math
 import random
 
-def simulated_annealing(initial_state, temp, mutation, fitness, cooling_rate=0.99999, min_temp=1e-3):
+from instances import ProblemInstance
+
+ActivityList = list[int]
+
+class Move:
+    def __init__(self, instance: ProblemInstance):
+        self.instance = instance
+        self.swappable_pairs = set()
+        V = set(job.id_job for job in instance.jobs)
+        for job in instance.jobs:
+            X = V - ({job.id_job} | instance.predecessors_closure[job.id_job] | instance.successors_closure[job.id_job])
+            for x in X:
+                self.swappable_pairs.add(tuple(sorted((job.id_job, x))))
+        
+    def __call__(self, state: ActivityList) -> ActivityList:
+        """
+        Generate a neighboring state by swapping two random jobs in the schedule.
+        """
+        new_state = state.copy()
+        i, j = random.sample(self.swappable_pairs, 1)
+        idx_i, idx_j = state.index(i), state.index(j)
+        new_state[idx_i], new_state[idx_j] = new_state[idx_j], new_state[idx_i]
+        return new_state 
+
+
+def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.99999, min_temp=1e-3):
     """
     Perform simulated annealing to optimize a given problem.
 
@@ -19,7 +45,7 @@ def simulated_annealing(initial_state, temp, mutation, fitness, cooling_rate=0.9
     best_fitness = current_fitness
 
     while temp > min_temp:
-        neighbor = mutation(current_state)
+        neighbor = move_f(current_state)
         neighbor_fitness = fitness(neighbor)
 
         delta_fitness = neighbor_fitness - current_fitness
@@ -52,7 +78,7 @@ if __name__ == "__main__":
     best_state, best_fitness = simulated_annealing(
         initial_state=initial,
         temp=100,
-        mutation=mutate,
+        move_f=mutate,
         fitness=fitness_function
     )
 
