@@ -164,7 +164,12 @@ class EvolutionSolver(Solver):
             off[0] = min(pop, key=lambda ind: self._fitness(ind, instance))
             pop = off[:]
 
-        return pop, log
+        fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
+        best = min(fits)
+        best_i = fits.index(best)
+        best_ind = pop[best_i]
+        best_schedule, makespan = self._decoder(best_ind)
+        return best_schedule, makespan
 
     def _select_tournament(self, population: list[ActivityList], fitnesses: list[int]) -> ActivityList:
         candidates_ids = random.sample(range(EVO_SETTINGS["population_size"]), EVO_SETTINGS["tournament_size"])
