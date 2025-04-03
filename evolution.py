@@ -4,7 +4,7 @@ from multiprocessing import Pool
 
 import numpy as np
 
-from instances import ProblemInstance, Resource
+from instances import ProblemInstance, Resource, ResourceConsumption
 from plotting import plot_gantt_chart
 from solvers import Schedule, Solver
 import deap_utils as du
@@ -66,7 +66,8 @@ class SerialScheduleGenerationSchemeDecoder:
         """Compute the possible start times for job j."""
         overheads = self._capacities_overhead(self._sufficient_capacities(j), start)
         overheads = [max(overheads[r][t] for r in self.instance.resources) for t in range(self.instance.horizon)]
-        return [t for t in range(start, self.instance.horizon) if overheads[t] >= self.durations[j]]
+        whatever = [t for t in range(start, self.instance.horizon) if overheads[t] >= self.durations[j]]
+        return whatever
 
     def _sufficient_capacities(self, j: int) -> dict[Resource, np.ndarray[bool]]:
         """Compute times when the resources are sufficient for consumption of job j."""
@@ -76,7 +77,7 @@ class SerialScheduleGenerationSchemeDecoder:
             if consumption == 0:
                 r_capacities[resource] = np.full(self.instance.horizon, True, dtype=bool)
                 continue
-            capacities = self.capacities[resource] < consumption
+            capacities = self.capacities[resource] >= consumption
             r_capacities[resource] = capacities
         return r_capacities
 
@@ -112,8 +113,9 @@ class SerialScheduleGenerationSchemeDecoder:
 
     def _decrease_capacities(self, j: int, start: int) -> None:
         """Decrease the capacities of the resources."""
+        duration = self.durations[j]
         for resource in self.instance.resources:
-            self.capacities[resource][start:] = self.capacities[resource][start:] - self.consumptions[j][resource.id_resource]
+            self.capacities[resource][start:duration] = self.capacities[resource][start:duration] - self.consumptions[j][resource.id_resource]
 
     def _debug_print(self, message: str) -> None:
         """Print debug messages."""
@@ -189,14 +191,14 @@ class EvolutionSolver(Solver):
 
 if __name__ == "__main__":
     from instances import Job, Resource, ResourceType
-    
+
     activity_list = [0, 1, 2, 3]
     instance = ProblemInstance(
         jobs=[
-            Job(id_job=0, duration=3, resource_consumption={0: 2}),
-            Job(id_job=1, duration=2, resource_consumption={0: 1}),
-            Job(id_job=2, duration=4, resource_consumption={0: 3}),
-            Job(id_job=3, duration=1, resource_consumption={0: 1})
+            Job(id_job=0, duration=3, resource_consumption=ResourceConsumption({0: 2})),
+            Job(id_job=1, duration=2, resource_consumption=ResourceConsumption({0: 1})),
+            Job(id_job=2, duration=4, resource_consumption=ResourceConsumption({0: 3})),
+            Job(id_job=3, duration=1, resource_consumption=ResourceConsumption({0: 1}))
         ],
         resources=[
             Resource(id_resource=0, resource_type=ResourceType.RENEWABLE, capacity=3)
@@ -207,7 +209,7 @@ if __name__ == "__main__":
 
     decoder = SerialScheduleGenerationSchemeDecoder()
     decoder.init(instance)
-    schedule = decoder(activity_list)
+    schedule, makespane = decoder(activity_list)
     print(schedule)
     schedule = {instance.jobs_by_id[j]: start for j, start in schedule.items()}
     plot_gantt_chart(schedule, instance)

@@ -33,9 +33,9 @@ def compute_descendants(instance_or_graph) -> dict[int, set[int]]:
     if isinstance(instance_or_graph, nx.DiGraph):
         graph = instance_or_graph
     else:
-        graph = build_instance_graph(instance_or_graph, reverse=True)
+        graph = build_instance_graph(instance_or_graph)
 
-    return {node: set(graph.successors(node)) for node in graph.nodes}
+    return {node: set(nx.descendants(graph, node)) for node in graph.nodes}
 
 
 def compute_ancestors(instance_or_graph) -> dict[int, set[int]]:
@@ -53,4 +53,4 @@ def compute_ancestors(instance_or_graph) -> dict[int, set[int]]:
     else:
         graph = build_instance_graph(instance_or_graph)
 
-    return {node: set(graph.predecessors(node)) for node in graph.nodes}
+    return {node: set(nx.ancestors(graph, node)) for node in graph.nodes}

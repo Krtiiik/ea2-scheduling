@@ -17,7 +17,7 @@ def plot_gantt_chart(schedule: Schedule, instance: ProblemInstance) -> None:
     ax.set_xlabel("Time")
     ax.set_ylabel("Jobs")
     ax.tick_params(axis='y', which='both', left=False, labelleft=False)
-    job_starts = [schedule[job] for job in instance.jobs]
+    job_starts = [schedule[job.id_job] for job in instance.jobs]
     intervals = [Interval(key=job.id_job, start=start, end=start + job.duration)
                  for job, start in zip(instance.jobs, job_starts)]
     interval_levels, max_level = compute_interval_levels(intervals)

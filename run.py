@@ -5,6 +5,7 @@ import pickle
 from matplotlib import pyplot as plt
 import tabulate
 
+from annealing import AnnealingSolver
 import cpsolver
 from evolution import EvolutionSolver
 from instances import load_instances
@@ -18,6 +19,7 @@ RESULTS_DIR = "results"
 RESULTS = {
     "exact": os.path.join(RESULTS_DIR, "exact.pkl"),
     "evolution": os.path.join(RESULTS_DIR, "evolution.pkl"),
+    "annealing": os.path.join(RESULTS_DIR, "annealing.pkl"),
     "table": os.path.join(RESULTS_DIR, "results.txt"),
 }
 CONFIGURATION : solvers.Configuration = {
@@ -30,8 +32,10 @@ parser = argparse.ArgumentParser()
 def main(args):
     solver_exact = cpsolver.CPSolver()
     solver_evolution = EvolutionSolver()
+    solver_annealing = AnnealingSolver()
     solver_exact.configure(CONFIGURATION, args)
     solver_evolution.configure(CONFIGURATION, args)
+    solver_annealing.configure(CONFIGURATION, args)
 
     # with open(RESULTS["evolution"], "rb") as f:
     #     solutions_evolution = pickle.load(f)
@@ -42,13 +46,26 @@ def main(args):
 
     instances = load_instances(DATA_DIR)
 
-    # solutions_exact = solver_exact.solve_all(instances)
+    solutions_exact = solver_exact.solve_all(instances)
     solutions_evolution = solver_evolution.solve_all(instances)
+    solutions_annealing = solver_annealing.solve_all(instances)
+
+    plot_gantt_chart(solutions_annealing[0][0], instances[0])
 
     # with open(RESULTS["exact"], "wb") as f:
     #     pickle.dump(solutions_exact, f)
-    with open(RESULTS["evolution"], "wb") as f:
-        pickle.dump(solutions_evolution, f)
+    # with open(RESULTS["evolution"], "wb") as f:
+    #     pickle.dump(solutions_evolution, f)
+    with open(RESULTS["annealing"], "wb") as f:
+        pickle.dump(solutions_annealing, f)
+
+    # with open(RESULTS["evolution"], "rb") as f:
+    #     solutions_evolution = pickle.load(f)
+
+    print(*solutions_annealing, sep="\n")
+
+    print(solutions_exact[0]['makespan'])
+    print(solutions_evolution[0][1])
 
     # TODO analyze solutions
     # save_results_table(instances, solutions_exact)

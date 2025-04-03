@@ -111,14 +111,14 @@ def generate_individual_genotype(initial_counter: dict, precedence_graph: dict):
     return genotype
 
             
-instance = parse_psplib("data/j302_10.sm")
-pop = generate_population(instance, 100)
+# instance = parse_psplib("data/j302_10.sm")
+# pop = generate_population(instance, 100)
 
 
-cx = CrossOverPaper(lambda x: 1)
-for i in range(100):
-    for j in range(i + 1, 100):
-        cx(pop[i], pop[j])
+# cx = CrossOverPaper(lambda x: 1)
+# for i in range(100):
+#     for j in range(i + 1, 100):
+#         cx(pop[i], pop[j])
 
 # def eval_func(individual):
 #     return sum(individual),  
