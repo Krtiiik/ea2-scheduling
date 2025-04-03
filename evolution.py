@@ -144,10 +144,10 @@ class EvolutionSolver(Solver):
         _cx = du.CrossoverMultipleCandidates(max_candidates=EVO_SETTINGS["candidates_size"])
         def cx(mating_pool):
             random.shuffle(mating_pool)
-            with Pool() as pool:
-                offspring = pool.starmap(_cx, zip(mating_pool[::2], mating_pool[1::2]))
-                return mating_pool + [ind for pair in offspring for ind in pair]
-            
+            return mating_pool + [ind
+                                  for ind1, ind2 in zip(mating_pool[::2], mating_pool[1::2])
+                                  for ind in _cx(ind1, ind2)
+                                  ]
         # mut = du.Mutation(self._fitness)
         def select(pop, fits): return [self._select_tournament(pop, fits) for _ in range(EVO_SETTINGS["population_size"])]
 
@@ -155,6 +155,7 @@ class EvolutionSolver(Solver):
         print("EVO")
         for gen in range(EVO_SETTINGS["max_gen"]):
             print(f'{gen+1}/{EVO_SETTINGS["max_gen"]}', end='\r')
+            fits = [self._fitness(ind, instance) for ind in pop]
             with Pool() as pool:
                 fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
             log.append(min(fits))
