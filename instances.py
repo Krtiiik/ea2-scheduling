@@ -885,9 +885,9 @@ def __parse_psplib_internal(file: IO, name_as: str | None) -> ProblemInstance:
                                  for (id_resource, resource_type), capacity in zip(resource_data, capacities)]
     jobs: list[Job] = [Job(id_job,
                            duration,
-                           ResourceConsumption({resource: consumption_by_resource_id[resource.id_resource]
+                           ResourceConsumption({resource: consumption[resource.id_resource]
                                                 for resource in resources}))
-                       for id_job, duration, consumptio in job_data]
+                       for id_job, duration, consumption in job_data]
 
     asterisks()
 

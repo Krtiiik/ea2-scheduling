@@ -1,4 +1,5 @@
 import typing
+from evolution import SerialScheduleGenerationSchemeDecoder
 from solvers import SolutionKind, Solver, Solution
 
 from ortools.sat.python import cp_model
