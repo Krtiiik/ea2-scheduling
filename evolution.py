@@ -6,7 +6,7 @@ import numpy as np
 
 from instances import ProblemInstance, Resource, ResourceConsumption
 from plotting import plot_gantt_chart
-from solvers import Schedule, Solver
+from solvers import Schedule, Solution, Solver
 import deap_utils as du
 
 
@@ -28,7 +28,7 @@ class SerialScheduleGenerationSchemeDecoder:
 
         self.durations = {job.id_job: job.duration for job in instance.jobs}
         self.consumptions = {
-            job.id_job: {resource.id_resource: job.resource_consumption.consumption_by_resource.get(resource.id_resource, 0)
+            job.id_job: {resource.id_resource: job.resource_consumption[resource]
                          for resource in instance.resources}
             for job in instance.jobs
         }
@@ -65,7 +65,7 @@ class SerialScheduleGenerationSchemeDecoder:
     def _possible_starts(self, j: int, start: int) -> list[int]:
         """Compute the possible start times for job j."""
         overheads = self._capacities_overhead(self._sufficient_capacities(j), start)
-        overheads = [max(overheads[r][t] for r in self.instance.resources) for t in range(self.instance.horizon)]
+        overheads = [min(overheads[r][t] for r in self.instance.resources) for t in range(self.instance.horizon)]
         whatever = [t for t in range(start, self.instance.horizon) if overheads[t] >= self.durations[j]]
         return whatever
 
@@ -115,7 +115,7 @@ class SerialScheduleGenerationSchemeDecoder:
         """Decrease the capacities of the resources."""
         duration = self.durations[j]
         for resource in self.instance.resources:
-            self.capacities[resource][start:duration] = self.capacities[resource][start:duration] - self.consumptions[j][resource.id_resource]
+            self.capacities[resource][start:start+duration] = self.capacities[resource][start:start+duration] - self.consumptions[j][resource.id_resource]
 
     def _debug_print(self, message: str) -> None:
         """Print debug messages."""
@@ -172,7 +172,7 @@ class EvolutionSolver(Solver):
         best_i = fits.index(best)
         best_ind = pop[best_i]
         best_schedule, makespan = self._decoder(best_ind)
-        return best_schedule, makespan
+        return Solution(schedule=best_schedule, makespan=makespan)
 
     def _select_tournament(self, population: list[ActivityList], fitnesses: list[int]) -> ActivityList:
         candidates_ids = random.sample(range(EVO_SETTINGS["population_size"]), EVO_SETTINGS["tournament_size"])

@@ -9,13 +9,13 @@ from annealing import AnnealingSolver
 from annealing import AnnealingSolver
 import cpsolver
 from evolution import EvolutionSolver
-from instances import load_instances
+from instances import ProblemInstance, load_instances
 from plotting import plot_gantt_chart
 import solvers
 
 
 # DATA_DIR = os.path.join("data", "j30.sm")
-DATA_DIR = os.path.join("data", "j30.sm")
+DATA_DIR = os.path.join("data")
 RESULTS_DIR = "results"
 RESULTS = {
     "exact": os.path.join(RESULTS_DIR, "exact.pkl"),
@@ -40,19 +40,43 @@ def main(args):
 
     instances = load_instances(DATA_DIR)
 
+    solutions_exact = solver_exact.solve_all(instances)
+    solutions_evolution = solver_evolution.solve_all(instances)
+    solutions_annealing = solver_annealing.solve_all(instances)
+
+    with open(RESULTS["exact"], "wb") as f:
+        pickle.dump(solutions_exact, f)
+    with open(RESULTS["evolution"], "wb") as f:
+        pickle.dump(solutions_evolution, f)
+    with open(RESULTS["annealing"], "wb") as f:
+        pickle.dump(solutions_annealing, f)
+
     with open(RESULTS["exact"], "rb") as f:
         solutions_exact = pickle.load(f)
+    with open(RESULTS["evolution"], "rb") as f:
+        solutions_evolution = pickle.load(f)
+    with open(RESULTS["annealing"], "rb") as f:
+        solutions_annealing = pickle.load(f)
 
-    # solutions_exact = solver_exact.solve_all(instances)
-    # solutions_evolution = solver_evolution.solve_all(instances)
-    # solutions_annealing = solver_annealing.solve_all(instances)
+    # def compute_consumptions(schedule: dict[int, int], instance: ProblemInstance):
+    #     for t in range(instance.horizon):
+    #         scheduled_jobs = [job for job in instance.jobs if schedule[job.id_job] <= t < (schedule[job.id_job] + job.duration)]
+    #         print(f"{t:3} | ", end='')
+    #         for resource in instance.resources:
+    #             consumption = sum(job.resource_consumption[resource] for job in scheduled_jobs)
+    #             print(f'{consumption} / {resource.capacity} | ', end='')
+    #         # print(scheduled_jobs)
+    #         print()
 
-    # with open(RESULTS["exact"], "wb") as f:
-    #     pickle.dump(solutions_exact, f)
-    # with open(RESULTS["evolution"], "wb") as f:
-    #     pickle.dump(solutions_evolution, f)
-    # with open(RESULTS["annealing"], "wb") as f:
-    #     pickle.dump(solutions_annealing, f)
+    # compute_consumptions(solutions_exact[0]["schedule"], instances[0])
+    # compute_consumptions(solutions_evolution[0][0], instances[0])
+    # compute_consumptions(solutions_annealing[0][0], instances[0])
+
+    plot_gantt_chart(solutions_exact[0]["schedule"], instances[0])
+    plot_gantt_chart(solutions_evolution[0]["schedule"], instances[0])
+    plot_gantt_chart(solutions_annealing[0]["schedule"], instances[0])
+
+    pass
 
 def save_results_table(instances, solutions_exact):
     with open(RESULTS["table"], 'wt') as f:

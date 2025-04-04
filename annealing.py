@@ -4,7 +4,7 @@ import random
 
 from evolution import SerialScheduleGenerationSchemeDecoder
 from instances import ProblemInstance
-from solvers import Solver
+from solvers import Solution, Solver
 
 from deap_utils import generate_population
 
@@ -37,7 +37,7 @@ class AnnealingSolver(Solver):
             min_temp=self.min_temp
         )
         schedule, makespan = self.decoder(best_state)
-        return schedule, makespan
+        return Solution(schedule=schedule, makespan=makespan)
 
     def fitness(self, state: ActivityList) -> int:
         """
@@ -100,14 +100,14 @@ def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.999
     while temp > min_temp:
         neighbor = move_f(current_state)
         neighbor_fitness = fitness(neighbor)
-        print(f"best | neighbor: {best_fitness} | {neighbor_fitness}")
+        # print(f"best | neighbor: {best_fitness} | {neighbor_fitness}")
 
-        delta_fitness = neighbor_fitness - current_fitness
+        delta_fitness = current_fitness - neighbor_fitness
         if delta_fitness > 0 or random.random() < math.exp(delta_fitness / temp):
             current_state = neighbor
             current_fitness = neighbor_fitness
 
-            if current_fitness > best_fitness:
+            if current_fitness < best_fitness:
                 best_state = current_state
                 best_fitness = current_fitness
 

@@ -30,7 +30,7 @@ class CPSolver(Solver):
                 cp_model.INFEASIBLE: SolutionKind.INFEASIBLE,
             }[status],
             schedule={
-                job: self._solver.value(variables["job_vars"][job.id_job]["start"])
+                job.id_job: self._solver.value(variables["job_vars"][job.id_job]["start"])
                 for job in instance.jobs
             },
             makespan=self._solver.value(variables["makespan"]),
