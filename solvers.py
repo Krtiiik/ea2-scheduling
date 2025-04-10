@@ -20,6 +20,7 @@ class Solution:
     schedule: Schedule | None
     makespan: int | None
     runtime: float = 0
+    eval_log: list[tuple[int, int]] = None
 
 
 class Solver:

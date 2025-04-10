@@ -11,8 +11,8 @@ import deap_utils as du
 
 
 EVO_SETTINGS = {
-    "population_size": 10,
-    "max_gen": 5,
+    "population_size": 20,
+    "max_gen": 50,
     "tournament_size": 3,
     "candidates_size": 5
 }
@@ -28,6 +28,7 @@ class EvolutionSolver(Solver):
         Solve the given instance using the evolutionary method.
         """
         self._decoder.init(instance)
+        eval_log = []
         pop = du.generate_population(instance, EVO_SETTINGS["population_size"])
         # _cx = du.CrossOverPaper(lambda ind: self._fitness(ind, instance))
         _cx = du.CrossoverMultipleCandidates(max_candidates=EVO_SETTINGS["candidates_size"])
@@ -40,30 +41,40 @@ class EvolutionSolver(Solver):
         # mut = du.Mutation(self._fitness)
         def select(pop, fits): return [self._select_tournament(pop, fits) for _ in range(EVO_SETTINGS["population_size"])]
 
-        log = []
+        log = []; fitness_eval_count = 0
         end_time = time.time() + self._config.time_limit
+
+        with Pool() as pool:
+            fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop]); fitness_eval_count += len(fits)
+        eval_log.append((fitness_eval_count, fits[argmin(fits)]))
+
         for gen in range(EVO_SETTINGS["max_gen"]):
             if time.time() > end_time:
                 best_ind = min(log, key=lambda ind_fit: ind_fit[1])[0]
                 best_schedule, makespan = self._decoder(best_ind)
-                return Solution(schedule=best_schedule, makespan=makespan)
-            with Pool() as pool:
-                fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
-            best_in_pop = argmin(fits)
-            log.append((pop[best_in_pop], fits[best_in_pop]))
+                return Solution(schedule=best_schedule, makespan=makespan, eval_log=eval_log)
+
             mating_pool = select(pop, fits)
             off = cx(mating_pool)
             # off = mutation(off)
-            off[0] = min(pop, key=lambda ind: self._fitness(ind, instance))
-            pop = off[:]
 
-        with Pool() as pool:
-            fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
+            with Pool() as pool:
+                fits_off = pool.starmap(self._fitness, [(ind, instance) for ind in off]); fitness_eval_count += len(fits)
+
+            # elitism
+            best_in_pop = argmin(fits)
+            eval_log.append((fitness_eval_count, fits[best_in_pop]))
+            off[0] = pop[best_in_pop][:]
+            fits_off[0] = fits[best_in_pop]
+            log.append((off[0], fits_off[0]))
+
+            pop = off[:]
+            fits = fits_off
 
         best_i = argmin(fits)
         best_ind = pop[best_i]
         best_schedule, makespan = self._decoder(best_ind)
-        return Solution(schedule=best_schedule, makespan=makespan)
+        return Solution(schedule=best_schedule, makespan=makespan, eval_log=eval_log)
 
     def _select_tournament(self, population: list[ActivityList], fitnesses: list[int]) -> ActivityList:
         candidates_ids = random.sample(range(EVO_SETTINGS["population_size"]), EVO_SETTINGS["tournament_size"])

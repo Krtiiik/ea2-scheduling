@@ -26,7 +26,7 @@ class AnnealingSolver(Solver):
         self.move = Move(instance)
         self.decoder = SerialScheduleGenerationSchemeDecoder()
         self.decoder.init(instance)
-        best_state, best_fitness = simulated_annealing(
+        best_state, best_fitness, eval_log = simulated_annealing(
             initial_state=generate_population(instance, 1)[0],
             temp=self.temp,
             move_f=self.move,
@@ -36,7 +36,7 @@ class AnnealingSolver(Solver):
             time_limit=self._config.time_limit
         )
         schedule, makespan = self.decoder(best_state)
-        return Solution(schedule=schedule, makespan=makespan)
+        return Solution(schedule=schedule, makespan=makespan, eval_log=eval_log)
 
     def fitness(self, state: ActivityList) -> int:
         """
@@ -85,7 +85,7 @@ def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.999
         eval_log.append((fitness_eval_count, best_fitness))
         temp *= cooling_rate
 
-    return best_state, best_fitness
+    return best_state, best_fitness, eval_log
 
 # Example usage:
 if __name__ == "__main__":

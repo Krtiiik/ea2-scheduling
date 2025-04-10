@@ -37,6 +37,8 @@ parser = argparse.ArgumentParser()
 
 
 def main(args):
+    print("Current absolute directory:", os.path.abspath(os.getcwd()))
+
     solver_exact = cpsolver.CPSolver()
     solver_evolution = EvolutionSolver()
     solver_annealing = AnnealingSolver()
@@ -81,9 +83,17 @@ def main(args):
     # compute_consumptions(solutions_evolution[0][0], instances[0])
     # compute_consumptions(solutions_annealing[0][0], instances[0])
 
-    print("exact:", solutions_exact[0].makespan)
-    print("evolution:", solutions_evolution[0].makespan)
-    print("annealing:", solutions_annealing[0].makespan)
+    print("Makespans")
+    print(" exact:", solutions_exact[0].makespan)
+    print(" evolution:", solutions_evolution[0].makespan)
+    print(" annealing:", solutions_annealing[0].makespan)
+    print("Runtime")
+    print(" exact", solutions_exact[0].runtime)
+    print(" evolution", solutions_evolution[0].runtime)
+    print(" annealing", solutions_annealing[0].runtime)
+    print("Fitness evaluations")
+    print(" evolution", solutions_evolution[0].eval_log[-1][0])
+    print(" annealing", solutions_annealing[0].eval_log[-1][0])
 
     plot_gantt_chart(solutions_exact[0].schedule, instances[0])
     plot_gantt_chart(solutions_evolution[0].schedule, instances[0])
