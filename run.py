@@ -23,9 +23,9 @@ RESULTS = {
     "annealing": os.path.join(RESULTS_DIR, "annealing.pkl"),
     "table": os.path.join(RESULTS_DIR, "results.txt"),
 }
-CONFIGURATION : solvers.Configuration = {
-    "time_limit": 60,
-}
+CONFIGURATION = solvers.Configuration(
+    time_limit = 60,
+)
 
 parser = argparse.ArgumentParser()
 
@@ -72,11 +72,14 @@ def main(args):
     # compute_consumptions(solutions_evolution[0][0], instances[0])
     # compute_consumptions(solutions_annealing[0][0], instances[0])
 
-    plot_gantt_chart(solutions_exact[0]["schedule"], instances[0])
-    plot_gantt_chart(solutions_evolution[0]["schedule"], instances[0])
-    plot_gantt_chart(solutions_annealing[0]["schedule"], instances[0])
+    print("exact:", solutions_exact[0].makespan)
+    print("evolution:", solutions_evolution[0].makespan)
+    print("annealing:", solutions_annealing[0].makespan)
 
-    pass
+    plot_gantt_chart(solutions_exact[0].schedule, instances[0])
+    plot_gantt_chart(solutions_evolution[0].schedule, instances[0])
+    plot_gantt_chart(solutions_annealing[0].schedule, instances[0])
+
 
 def save_results_table(instances, solutions_exact):
     with open(RESULTS["table"], 'wt') as f:

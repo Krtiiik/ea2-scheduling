@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import math
 import random
+import time
 
 from evolution import SerialScheduleGenerationSchemeDecoder
 from instances import ProblemInstance
@@ -21,7 +22,7 @@ class AnnealingSolver(Solver):
         self.cooling_rate = cooling_rate
         self.min_temp = min_temp
 
-    def solve(self, instance: ProblemInstance) -> tuple[ActivityList, int]:
+    def _solve(self, instance: ProblemInstance) -> tuple[ActivityList, int]:
         """
         Solve the problem using simulated annealing.
         """
@@ -34,7 +35,8 @@ class AnnealingSolver(Solver):
             move_f=self.move,
             fitness=self.fitness,
             cooling_rate=self.cooling_rate,
-            min_temp=self.min_temp
+            min_temp=self.min_temp,
+            time_limit=self._config.time_limit
         )
         schedule, makespan = self.decoder(best_state)
         return Solution(schedule=schedule, makespan=makespan)
@@ -80,7 +82,7 @@ class Move:
         return new_state 
 
 
-def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.99999, min_temp=1e-3):
+def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.99999, min_temp=1e-3, time_limit=10):
     """
     Perform simulated annealing to optimize a given problem.
 
@@ -97,7 +99,8 @@ def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.999
     best_state = current_state
     best_fitness = current_fitness
 
-    while temp > min_temp:
+    end_time = time.time() + time_limit
+    while temp > min_temp and time.time() < end_time:
         neighbor = move_f(current_state)
         neighbor_fitness = fitness(neighbor)
         # print(f"best | neighbor: {best_fitness} | {neighbor_fitness}")

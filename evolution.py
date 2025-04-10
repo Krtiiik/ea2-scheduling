@@ -1,6 +1,7 @@
 from collections import defaultdict
 import random
 from multiprocessing import Pool
+import time
 
 import numpy as np
 
@@ -136,7 +137,7 @@ class EvolutionSolver(Solver):
         super().__init__()
         self._decoder = SerialScheduleGenerationSchemeDecoder()
 
-    def solve(self, instance):
+    def _solve(self, instance):
         """
         Solve the given instance using the evolutionary method.
         """
@@ -149,17 +150,21 @@ class EvolutionSolver(Solver):
             with Pool() as pool:
                 offspring = pool.starmap(_cx, zip(mating_pool[::2], mating_pool[1::2]))
                 return mating_pool + [ind for pair in offspring for ind in pair]
-            
+
         # mut = du.Mutation(self._fitness)
         def select(pop, fits): return [self._select_tournament(pop, fits) for _ in range(EVO_SETTINGS["population_size"])]
 
         log = []
-        print("EVO")
+        end_time = time.time() + self._config.time_limit
         for gen in range(EVO_SETTINGS["max_gen"]):
-            print(f'{gen+1}/{EVO_SETTINGS["max_gen"]}', end='\r')
+            if time.time() > end_time:
+                best_ind = min(log, key=lambda ind_fit: ind_fit[1])[0]
+                best_schedule, makespan = self._decoder(best_ind)
+                return Solution(schedule=best_schedule, makespan=makespan)
             with Pool() as pool:
                 fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
-            log.append(min(fits))
+            best_in_pop = argmin(fits)
+            log.append((pop[best_in_pop], fits[best_in_pop]))
             mating_pool = select(pop, fits)
             off = cx(mating_pool)
             # off = mutation(off)
@@ -168,8 +173,8 @@ class EvolutionSolver(Solver):
 
         with Pool() as pool:
             fits = pool.starmap(self._fitness, [(ind, instance) for ind in pop])
-        best = min(fits)
-        best_i = fits.index(best)
+
+        best_i = argmin(fits)
         best_ind = pop[best_i]
         best_schedule, makespan = self._decoder(best_ind)
         return Solution(schedule=best_schedule, makespan=makespan)
@@ -187,6 +192,16 @@ class EvolutionSolver(Solver):
         """
         schedule, makespan = self._decoder(individual)
         return makespan
+
+
+def argmin(iter, return_x=False):
+    best_i = None
+    best = None
+    for i, x in enumerate(iter):
+        if best is None or x < best:
+            best = x
+            best_i = i
+    return best_i if not return_x else (best_i, best)
 
 
 if __name__ == "__main__":

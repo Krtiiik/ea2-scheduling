@@ -1,6 +1,5 @@
 import typing
-from evolution import SerialScheduleGenerationSchemeDecoder
-from solvers import SolutionKind, Solver, Solution
+from solvers import Solver, Solution
 
 from ortools.sat.python import cp_model
 
@@ -16,19 +15,15 @@ class CPSolver(Solver):
         super().__init__()
         self._solver = cp_model.CpSolver()
 
-    def solve(self, instance):
+    def _solve(self, instance):
         """
         Solve the given instance using the exact method.
         """
         model, variables = self._build_model(instance)
+        self._solver.parameters.max_time_in_seconds = self._config.time_limit
         status = self._solver.solve(model)
 
         return Solution(
-            kind={
-                cp_model.OPTIMAL: SolutionKind.OPTIMAL,
-                cp_model.FEASIBLE: SolutionKind.FEASIBLE,
-                cp_model.INFEASIBLE: SolutionKind.INFEASIBLE,
-            }[status],
             schedule={
                 job.id_job: self._solver.value(variables["job_vars"][job.id_job]["start"])
                 for job in instance.jobs

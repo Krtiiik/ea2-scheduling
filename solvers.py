@@ -1,24 +1,25 @@
 import argparse
+from dataclasses import dataclass
 import typing
+import time
 
 from instances import Job, ProblemInstance
 from enum import Enum
 
 
-class Configuration(typing.TypedDict):
-    time_limit: int  # for each instance, in seconds
+@dataclass
+class Configuration:
+    time_limit: int # for each instance, in seconds
 
-class SolutionKind(Enum):
-    OPTIMAL = "optimal"
-    FEASIBLE = "feasible"
-    INFEASIBLE = "infeasible"
 
 Schedule = dict[Job|int, int]  # Job -> start time
 
-class Solution(typing.TypedDict):
-    kind: SolutionKind
+
+@dataclass
+class Solution:
     schedule: Schedule | None
     makespan: int | None
+    runtime: float = 0
 
 
 class Solver:
@@ -36,7 +37,15 @@ class Solver:
         """
         Solve the given instance.
         """
-        pass
+        t_start = time.time()
+        solution = self._solve(instance)
+        t_end = time.time()
+        runtime = t_end - t_start
+        solution.runtime = runtime
+        return solution
+
+    def _solve(self, instance: ProblemInstance) -> Solution:
+        raise NotImplementedError()
 
     def solve_all(self, instances: list[ProblemInstance]) -> list[Solution]:
         """
@@ -48,5 +57,5 @@ class Solver:
             print(f'{i + 1}/{len(instances)}: {instance.name}', end='\r')
             solution = self.solve(instance)
             solutions.append(solution)
-        print("Done")
+        print("Done"+" "*10)
         return solutions
