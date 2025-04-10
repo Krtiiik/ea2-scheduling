@@ -24,7 +24,7 @@ RESULTS = {
     "table": os.path.join(RESULTS_DIR, "results.txt"),
 }
 CONFIGURATION = solvers.Configuration(
-    time_limit = 60,
+    time_limit = 30,
 )
 
 parser = argparse.ArgumentParser()
