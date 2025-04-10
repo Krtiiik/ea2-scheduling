@@ -41,9 +41,13 @@ class EvolutionSolver(Solver):
 
         _mut = Move(instance)
         def mutation(mating_pool):
+            _off = []
             for _i, _ind in enumerate(mating_pool):
                 if random.random() < EVO_SETTINGS["mutation_prob"]:
-                    mating_pool[_i] = _mut(_ind)
+                    _off.append(_mut(_ind))
+                else:
+                    _off.append(_ind)
+            return _off
 
         # mut = du.Mutation(self._fitness)
         def select(pop, fits): return [self._select_tournament(pop, fits) for _ in range(EVO_SETTINGS["population_size"])]
