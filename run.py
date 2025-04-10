@@ -23,6 +23,12 @@ RESULTS = {
     "annealing": os.path.join(RESULTS_DIR, "annealing.pkl"),
     "table": os.path.join(RESULTS_DIR, "results.txt"),
 }
+RESULTS_EVAL_DIR = os.path.join(RESULTS_DIR, "evals ")
+RESULTS_EVAL = {
+    "exact": os.path.join(RESULTS_EVAL_DIR, "exact"),
+    "evolution": os.path.join(RESULTS_EVAL_DIR, "evolution"),
+    "annealing": os.path.join(RESULTS_EVAL_DIR, "annealing"),
+}
 CONFIGURATION = solvers.Configuration(
     time_limit = 30,
 )
@@ -40,8 +46,11 @@ def main(args):
 
     instances = load_instances(DATA_DIR)
 
+    print("Solving exact...")
     solutions_exact = solver_exact.solve_all(instances)
+    print("Solving evolution...")
     solutions_evolution = solver_evolution.solve_all(instances)
+    print("Solving annealing...")
     solutions_annealing = solver_annealing.solve_all(instances)
 
     with open(RESULTS["exact"], "wb") as f:

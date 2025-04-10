@@ -1,15 +1,12 @@
-from dataclasses import dataclass
 import math
 import random
 import time
 
-from evolution import SerialScheduleGenerationSchemeDecoder
+from metaheuristic_repr import ActivityList, Move, SerialScheduleGenerationSchemeDecoder
 from instances import ProblemInstance
 from solvers import Solution, Solver
 
 from deap_utils import generate_population
-
-ActivityList = list[int]
 
 
 class AnnealingSolver(Solver):
@@ -49,39 +46,6 @@ class AnnealingSolver(Solver):
         return makespan
 
 
-class Move:
-    def __init__(self, instance: ProblemInstance):
-        self.instance = instance
-        # self.swappable_pairs = set()
-        # V = set(job.id_job for job in instance.jobs)
-        # for job in instance.jobs:
-        #     X = V - ({job.id_job} | instance.predecessors_closure[job.id_job] | instance.successors_closure[job.id_job])
-        #     for x in X:
-        #         self.swappable_pairs.add(tuple(sorted((job.id_job, x))))
-        # self.swappable_pairs = list(self.swappable_pairs)
-        
-    def __call__(self, state: ActivityList) -> ActivityList:
-        """
-        Generate a neighboring state by swapping two random jobs in the schedule.
-        """
-        new_state = state.copy()
-        success = False
-        while not success:
-            success = True
-            idx1, idx2 = random.sample(range(len(new_state)), 2)
-            i, j = min(idx1, idx2), max(idx1, idx2)
-            ni, nj = new_state[i], new_state[j]
-            sni, pnj = self.instance.successors_closure[ni], self.instance.predecessors_closure[nj]
-            for k in range(i, j+1):
-                nk =  new_state[k]
-                if nk in sni or nk in pnj:
-                    success = False
-                    break
-        # print(f"Swapping pos {i} and {j}: {new_state[i]} and {new_state[j]}")
-        new_state[i], new_state[j] = new_state[j], new_state[i]
-        return new_state 
-
-
 def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.99999, min_temp=1e-3, time_limit=10):
     """
     Perform simulated annealing to optimize a given problem.
@@ -94,15 +58,19 @@ def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.999
     :param min_temp: The minimum temperature to stop the algorithm.
     :return: The best state found and its fitness value.
     """
+    eval_log = []
+    fitness_eval_count = 0
+
     current_state = initial_state
-    current_fitness = fitness(current_state)
+    current_fitness = fitness(current_state); fitness_eval_count += 1
     best_state = current_state
     best_fitness = current_fitness
+    eval_log.append((fitness_eval_count, best_fitness))
 
     end_time = time.time() + time_limit
     while temp > min_temp and time.time() < end_time:
         neighbor = move_f(current_state)
-        neighbor_fitness = fitness(neighbor)
+        neighbor_fitness = fitness(neighbor); fitness_eval_count += 1
         # print(f"best | neighbor: {best_fitness} | {neighbor_fitness}")
 
         delta_fitness = current_fitness - neighbor_fitness
@@ -114,6 +82,7 @@ def simulated_annealing(initial_state, temp, move_f, fitness, cooling_rate=0.999
                 best_state = current_state
                 best_fitness = current_fitness
 
+        eval_log.append((fitness_eval_count, best_fitness))
         temp *= cooling_rate
 
     return best_state, best_fitness
