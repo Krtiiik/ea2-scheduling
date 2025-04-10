@@ -10,7 +10,7 @@ from annealing import AnnealingSolver
 import cpsolver
 from evolution import EvolutionSolver
 from instances import ProblemInstance, load_instances
-from plotting import plot_gantt_chart
+from plotting import plot_gantt_chart, plot_fitness_graph
 import solvers
 
 
@@ -48,19 +48,19 @@ def main(args):
 
     instances = load_instances(DATA_DIR)
 
-    print("Solving exact...")
-    solutions_exact = solver_exact.solve_all(instances)
-    print("Solving evolution...")
-    solutions_evolution = solver_evolution.solve_all(instances)
-    print("Solving annealing...")
-    solutions_annealing = solver_annealing.solve_all(instances)
+    # print("Solving exact...")
+    # solutions_exact = solver_exact.solve_all(instances)
+    # print("Solving evolution...")
+    # solutions_evolution = solver_evolution.solve_all(instances)
+    # print("Solving annealing...")
+    # solutions_annealing = solver_annealing.solve_all(instances)
 
-    with open(RESULTS["exact"], "wb") as f:
-        pickle.dump(solutions_exact, f)
-    with open(RESULTS["evolution"], "wb") as f:
-        pickle.dump(solutions_evolution, f)
-    with open(RESULTS["annealing"], "wb") as f:
-        pickle.dump(solutions_annealing, f)
+    # with open(RESULTS["exact"], "wb") as f:
+    #     pickle.dump(solutions_exact, f)
+    # with open(RESULTS["evolution"], "wb") as f:
+    #     pickle.dump(solutions_evolution, f)
+    # with open(RESULTS["annealing"], "wb") as f:
+    #     pickle.dump(solutions_annealing, f)
 
     with open(RESULTS["exact"], "rb") as f:
         solutions_exact = pickle.load(f)
@@ -98,6 +98,12 @@ def main(args):
     plot_gantt_chart(solutions_exact[0].schedule, instances[0])
     plot_gantt_chart(solutions_evolution[0].schedule, instances[0])
     plot_gantt_chart(solutions_annealing[0].schedule, instances[0])
+
+    f = plt.figure()
+    ax = f.gca()
+    plot_fitness_graph(solutions_evolution[0].eval_log, "Evolution", ax)
+    plot_fitness_graph(solutions_annealing[0].eval_log, "Annealing", ax)
+    plt.show(block=True)
 
 
 def save_results_table(instances, solutions_exact):

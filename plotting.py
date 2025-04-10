@@ -10,6 +10,22 @@ from solvers import Schedule
 Interval = namedtuple("Interval", ("key", "start", "end"))
 
 
+def plot_fitness_graph(eval_logs, label="Fitness", ax=None):
+    if ax is None:
+        _, ax = plt.subplots(figsize=(10, 6))
+
+    evals, fitnesses = zip(*eval_logs)
+    ax.plot(evals, fitnesses, marker='o', linestyle='-', label=label)
+    ax.set_title("Fitness over Evaluations")
+    ax.set_xlabel("Evaluations")
+    ax.set_ylabel("Fitness")
+    ax.grid(True, linestyle='--', alpha=0.6)
+    ax.legend()
+
+    if ax is None:
+        plt.show()
+
+
 def plot_gantt_chart(schedule: Schedule, instance: ProblemInstance) -> None:
     f = plt.figure(figsize=(10, 6))
     f.suptitle(f"Gantt Chart")
