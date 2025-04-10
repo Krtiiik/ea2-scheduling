@@ -23,7 +23,7 @@ RESULTS = {
     "annealing": os.path.join(RESULTS_DIR, "annealing.pkl"),
     "table": os.path.join(RESULTS_DIR, "results.txt"),
 }
-CONFIGURATION : solvers.Configuration = {
+CONFIGURATION: solvers.Configuration = {
     "time_limit": 60,
 }
 
@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser()
 def main(args):
     solver_exact = cpsolver.CPSolver()
     solver_evolution = EvolutionSolver()
-    solver_annealing = AnnealingSolver()
+    solver_annealing = AnnealingSolver(cooling_rate=0.99)
     solver_exact.configure(CONFIGURATION, args)
     solver_evolution.configure(CONFIGURATION, args)
     solver_annealing.configure(CONFIGURATION, args)
@@ -43,6 +43,10 @@ def main(args):
     solutions_exact = solver_exact.solve_all(instances)
     solutions_evolution = solver_evolution.solve_all(instances)
     solutions_annealing = solver_annealing.solve_all(instances)
+
+    print(solutions_exact)
+    print("------------")
+    print(solutions_annealing)
 
     with open(RESULTS["exact"], "wb") as f:
         pickle.dump(solutions_exact, f)
@@ -78,24 +82,31 @@ def main(args):
 
     pass
 
+
 def save_results_table(instances, solutions_exact):
-    with open(RESULTS["table"], 'wt') as f:
-        f.write(tabulate.tabulate(
-            sorted(
-                [{
-                    "instance": instance.name,
-                    "exact_kind": solution["kind"].value,
-                    "exact_makespan": solution["makespan"],
-                    # "evolution": solution_evolution["makespan"],
-                } for solution, instance in zip(solutions_exact, instances)],
-                key=lambda x: (
-                    x["instance"].startswith("j120"), 
-                    x["instance"].startswith("j90"),
-                    x["instance"].startswith("j60"), 
-                    x["instance"].startswith("j30"))
-            ),
-            headers="keys",
-        ))
+    with open(RESULTS["table"], "wt") as f:
+        f.write(
+            tabulate.tabulate(
+                sorted(
+                    [
+                        {
+                            "instance": instance.name,
+                            "exact_kind": solution["kind"].value,
+                            "exact_makespan": solution["makespan"],
+                            # "evolution": solution_evolution["makespan"],
+                        }
+                        for solution, instance in zip(solutions_exact, instances)
+                    ],
+                    key=lambda x: (
+                        x["instance"].startswith("j120"),
+                        x["instance"].startswith("j90"),
+                        x["instance"].startswith("j60"),
+                        x["instance"].startswith("j30"),
+                    ),
+                ),
+                headers="keys",
+            )
+        )
 
 
 if __name__ == "__main__":
