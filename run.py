@@ -48,19 +48,19 @@ def main(args):
 
     instances = load_instances(DATA_DIR)
 
-    # print("Solving exact...")
-    # solutions_exact = solver_exact.solve_all(instances)
-    # print("Solving evolution...")
-    # solutions_evolution = solver_evolution.solve_all(instances)
-    # print("Solving annealing...")
-    # solutions_annealing = solver_annealing.solve_all(instances)
+    print("Solving exact...")
+    solutions_exact = solver_exact.solve_all(instances)
+    print("Solving evolution...")
+    solutions_evolution = solver_evolution.solve_all(instances)
+    print("Solving annealing...")
+    solutions_annealing = solver_annealing.solve_all(instances)
 
-    # with open(RESULTS["exact"], "wb") as f:
-    #     pickle.dump(solutions_exact, f)
-    # with open(RESULTS["evolution"], "wb") as f:
-    #     pickle.dump(solutions_evolution, f)
-    # with open(RESULTS["annealing"], "wb") as f:
-    #     pickle.dump(solutions_annealing, f)
+    with open(RESULTS["exact"], "wb") as f:
+        pickle.dump(solutions_exact, f)
+    with open(RESULTS["evolution"], "wb") as f:
+        pickle.dump(solutions_evolution, f)
+    with open(RESULTS["annealing"], "wb") as f:
+        pickle.dump(solutions_annealing, f)
 
     with open(RESULTS["exact"], "rb") as f:
         solutions_exact = pickle.load(f)
@@ -68,20 +68,6 @@ def main(args):
         solutions_evolution = pickle.load(f)
     with open(RESULTS["annealing"], "rb") as f:
         solutions_annealing = pickle.load(f)
-
-    # def compute_consumptions(schedule: dict[int, int], instance: ProblemInstance):
-    #     for t in range(instance.horizon):
-    #         scheduled_jobs = [job for job in instance.jobs if schedule[job.id_job] <= t < (schedule[job.id_job] + job.duration)]
-    #         print(f"{t:3} | ", end='')
-    #         for resource in instance.resources:
-    #             consumption = sum(job.resource_consumption[resource] for job in scheduled_jobs)
-    #             print(f'{consumption} / {resource.capacity} | ', end='')
-    #         # print(scheduled_jobs)
-    #         print()
-
-    # compute_consumptions(solutions_exact[0]["schedule"], instances[0])
-    # compute_consumptions(solutions_evolution[0][0], instances[0])
-    # compute_consumptions(solutions_annealing[0][0], instances[0])
 
     print("Makespans")
     print(" exact:", solutions_exact[0].makespan)

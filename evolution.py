@@ -3,7 +3,7 @@ from multiprocessing import Pool
 import time
 
 
-from metaheuristic_repr import ActivityList, SerialScheduleGenerationSchemeDecoder
+from metaheuristic_repr import ActivityList, Move, SerialScheduleGenerationSchemeDecoder
 from instances import ProblemInstance, Resource, ResourceConsumption
 from plotting import plot_gantt_chart
 from solvers import Solution, Solver
@@ -14,7 +14,8 @@ EVO_SETTINGS = {
     "population_size": 20,
     "max_gen": 50,
     "tournament_size": 3,
-    "candidates_size": 5
+    "candidates_size": 5,
+    "mutation_prob": 0.5,
 }
 
 
@@ -38,6 +39,12 @@ class EvolutionSolver(Solver):
                 offspring = pool.starmap(_cx, zip(mating_pool[::2], mating_pool[1::2]))
                 return mating_pool + [ind for pair in offspring for ind in pair]
 
+        _mut = Move(instance)
+        def mutation(mating_pool):
+            for _i, _ind in enumerate(mating_pool):
+                if random.random() < EVO_SETTINGS["mutation_prob"]:
+                    mating_pool[_i] = _mut(_ind)
+
         # mut = du.Mutation(self._fitness)
         def select(pop, fits): return [self._select_tournament(pop, fits) for _ in range(EVO_SETTINGS["population_size"])]
 
@@ -56,7 +63,7 @@ class EvolutionSolver(Solver):
 
             mating_pool = select(pop, fits)
             off = cx(mating_pool)
-            # off = mutation(off)
+            off = mutation(off)
 
             with Pool() as pool:
                 fits_off = pool.starmap(self._fitness, [(ind, instance) for ind in off]); fitness_eval_count += len(fits)
