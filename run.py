@@ -45,7 +45,7 @@ def main(args):
     solver_annealing.configure(CONFIGURATION, args)
 
     # instances = load_instances(DATA_DIR)
-    with open("instances.pkl", "rb") as f:
+    with open(os.path.join(RESULTS_DIR, "instances.pkl"), "rb") as f:
         instances = pickle.load(f)
 
     # print("Solving exact...")
