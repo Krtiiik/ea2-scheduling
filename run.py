@@ -10,7 +10,7 @@ from annealing import AnnealingSolver
 import cpsolver
 from evolution import EvolutionSolver
 from instances import ProblemInstance, load_instances
-from plotting import plot_gantt_chart, plot_fitness_graph
+from plotting import plot_fitnesses, plot_gantt_chart, plot_fitness_graph, plot_comparison, plot_makespans
 import solvers
 
 
@@ -37,8 +37,6 @@ parser = argparse.ArgumentParser()
 
 
 def main(args):
-    print("Current absolute directory:", os.path.abspath(os.getcwd()))
-
     solver_exact = cpsolver.CPSolver()
     solver_evolution = EvolutionSolver()
     solver_annealing = AnnealingSolver()
@@ -46,21 +44,23 @@ def main(args):
     solver_evolution.configure(CONFIGURATION, args)
     solver_annealing.configure(CONFIGURATION, args)
 
-    instances = load_instances(DATA_DIR)
+    # instances = load_instances(DATA_DIR)
+    with open("instances.pkl", "rb") as f:
+        instances = pickle.load(f)
 
-    print("Solving exact...")
-    solutions_exact = solver_exact.solve_all(instances)
-    print("Solving evolution...")
-    solutions_evolution = solver_evolution.solve_all(instances)
-    print("Solving annealing...")
-    solutions_annealing = solver_annealing.solve_all(instances)
+    # print("Solving exact...")
+    # solutions_exact = solver_exact.solve_all(instances)
+    # print("Solving evolution...")
+    # solutions_evolution = solver_evolution.solve_all(instances)
+    # print("Solving annealing...")
+    # solutions_annealing = solver_annealing.solve_all(instances)
 
-    with open(RESULTS["exact"], "wb") as f:
-        pickle.dump(solutions_exact, f)
-    with open(RESULTS["evolution"], "wb") as f:
-        pickle.dump(solutions_evolution, f)
-    with open(RESULTS["annealing"], "wb") as f:
-        pickle.dump(solutions_annealing, f)
+    # with open(RESULTS["exact"], "wb") as f:
+    #     pickle.dump(solutions_exact, f)
+    # with open(RESULTS["evolution"], "wb") as f:
+    #     pickle.dump(solutions_evolution, f)
+    # with open(RESULTS["annealing"], "wb") as f:
+    #     pickle.dump(solutions_annealing, f)
 
     with open(RESULTS["exact"], "rb") as f:
         solutions_exact = pickle.load(f)
@@ -69,44 +69,42 @@ def main(args):
     with open(RESULTS["annealing"], "rb") as f:
         solutions_annealing = pickle.load(f)
 
-    print("Makespans")
-    print(" exact:", solutions_exact[0].makespan)
-    print(" evolution:", solutions_evolution[0].makespan)
-    print(" annealing:", solutions_annealing[0].makespan)
-    print("Runtime")
-    print(" exact", solutions_exact[0].runtime)
-    print(" evolution", solutions_evolution[0].runtime)
-    print(" annealing", solutions_annealing[0].runtime)
-    print("Fitness evaluations")
-    print(" evolution", solutions_evolution[0].eval_log[-1][0])
-    print(" annealing", solutions_annealing[0].eval_log[-1][0])
-
-    plot_gantt_chart(solutions_exact[0].schedule, instances[0])
-    plot_gantt_chart(solutions_evolution[0].schedule, instances[0])
-    plot_gantt_chart(solutions_annealing[0].schedule, instances[0])
-
-    f = plt.figure()
-    ax = f.gca()
-    plot_fitness_graph(solutions_evolution[0].eval_log, "Evolution", ax)
-    plot_fitness_graph(solutions_annealing[0].eval_log, "Annealing", ax)
-    plt.show(block=True)
+    save_results_table(instances, solutions_exact, solutions_evolution, solutions_annealing)
+    plot_comparison(instances, solutions_exact, solutions_evolution, solutions_annealing)
+    plot_makespans(instances, solutions_exact, solutions_evolution, solutions_annealing)
+    plot_fitnesses(
+        [sol.eval_log for sol in solutions_evolution],
+        [sol.eval_log for sol in solutions_annealing],
+    )
 
 
-def save_results_table(instances, solutions_exact):
+def instance_size_param(instance):
+    size_param1, param2 = instance[1:].split('_')
+    split = size_param1.index('0')
+    size, param1 = size_param1[:split+1], size_param1[split+1:]
+    return tuple(map(int, (size, param1, param2)))
+
+
+def save_results_table(
+    instances: list[ProblemInstance],
+    solutions_exact: list[solvers.Solution],
+    solutions_evolution: list[solvers.Solution],
+    solutions_annealing: list[solvers.Solution],
+    ):
     with open(RESULTS["table"], 'wt') as f:
         f.write(tabulate.tabulate(
             sorted(
                 [{
-                    "instance": instance.name,
-                    "exact_kind": solution["kind"].value,
-                    "exact_makespan": solution["makespan"],
-                    # "evolution": solution_evolution["makespan"],
-                } for solution, instance in zip(solutions_exact, instances)],
-                key=lambda x: (
-                    x["instance"].startswith("j120"), 
-                    x["instance"].startswith("j90"),
-                    x["instance"].startswith("j60"), 
-                    x["instance"].startswith("j30"))
+                    "instance": instance.name[:-3],
+                    "makespan_exact": sol_exact.makespan,
+                    "makespan_evolution": sol_evolution.makespan,
+                    "makespan_annealing": sol_annealing.makespan,
+                    "runtime_exact": sol_exact.runtime,
+                    "runtime_evolution": sol_evolution.runtime,
+                    "runtime_annealing": sol_annealing.runtime,
+                } for instance, sol_exact, sol_evolution, sol_annealing
+                  in zip(instances, solutions_exact, solutions_evolution, solutions_annealing)],
+                key=lambda x: instance_size_param(x["instance"]),
             ),
             headers="keys",
         ))
