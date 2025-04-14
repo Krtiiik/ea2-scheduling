@@ -10,8 +10,9 @@ from annealing import AnnealingSolver
 import cpsolver
 from evolution import EvolutionSolver
 from instances import ProblemInstance, load_instances
-from plotting import plot_fitnesses, plot_gantt_chart, plot_fitness_graph, plot_comparison, plot_makespans
+from plotting import plot_fitnesses, plot_fitnesses_graph, plot_gantt_chart, plot_fitness_graph, plot_comparison, plot_makespans, plot_runtimes
 import solvers
+import csv
 
 
 # DATA_DIR = os.path.join("data", "j30.sm")
@@ -69,13 +70,28 @@ def main(args):
     with open(RESULTS["annealing"], "rb") as f:
         solutions_annealing = pickle.load(f)
 
+    from instances_drawing import plot_instance_graph
+    plot_instance_graph(instances[0])
+    plot_instance_graph(instances[27])
+
     save_results_table(instances, solutions_exact, solutions_evolution, solutions_annealing)
-    plot_comparison(instances, solutions_exact, solutions_evolution, solutions_annealing)
-    plot_makespans(instances, solutions_exact, solutions_evolution, solutions_annealing)
-    plot_fitnesses(
-        [sol.eval_log for sol in solutions_evolution],
-        [sol.eval_log for sol in solutions_annealing],
-    )
+    plot_comparison(instances[:20], solutions_exact[:20], solutions_evolution[:20], solutions_annealing[:20], save_as=os.path.join(RESULTS_DIR, "comparisson1.pdf"))
+    plot_comparison(instances[20:], solutions_exact[20:], solutions_evolution[20:], solutions_annealing[20:], save_as=os.path.join(RESULTS_DIR, "comparisson2.pdf"))
+    plot_makespans(instances, solutions_exact, solutions_evolution, solutions_annealing, save_as=os.path.join(RESULTS_DIR, "makespans.pdf"))
+    plot_runtimes(instances, solutions_exact, solutions_evolution, solutions_annealing, save_as=os.path.join(RESULTS_DIR, "runtimes.pdf"))
+    # plot_fitnesses(
+    #     instances,
+    #     [sol.eval_log for sol in solutions_evolution],
+    #     [sol.eval_log for sol in solutions_annealing],
+    # )
+
+    instances_names: list = [inst.name for inst in instances]
+
+    fun_instances = [instances_names.index(name) for name in ["j3046_6.sm", "j1202_6.sm", "j6025_9.sm", "j601_4.sm"]]
+    fun_logs = [(solutions_evolution[i].eval_log, solutions_annealing[i].eval_log) for i in fun_instances]
+    fun_instances = [instances[i] for i in fun_instances]
+    for (inst, (log_evo, log_ann)) in zip(fun_instances, fun_logs):
+        plot_fitnesses_graph(log_evo, log_ann, inst.name[:-3], save_as=os.path.join(RESULTS_DIR, inst.name[:-3]+'.pdf'))
 
 
 def instance_size_param(instance):
@@ -91,23 +107,51 @@ def save_results_table(
     solutions_evolution: list[solvers.Solution],
     solutions_annealing: list[solvers.Solution],
     ):
-    with open(RESULTS["table"], 'wt') as f:
-        f.write(tabulate.tabulate(
+    with open(RESULTS["table"], 'wt', newline='') as f:
+        # f.write(tabulate.tabulate(
+        #     sorted(
+        #         [{
+        #             "instance": instance.name[:-3],
+        #             "makespan_exact": sol_exact.makespan,
+        #             "makespan_evolution": sol_evolution.makespan,
+        #             "makespan_annealing": sol_annealing.makespan,
+        #             "runtime_exact": sol_exact.runtime,
+        #             "runtime_evolution": sol_evolution.runtime,
+        #             "runtime_annealing": sol_annealing.runtime,
+        #         } for instance, sol_exact, sol_evolution, sol_annealing
+        #           in zip(instances, solutions_exact, solutions_evolution, solutions_annealing)],
+        #         key=lambda x: instance_size_param(x["instance"]),
+        #     ),
+        #     headers="keys",
+        # ))
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+            "instance",
+            "makespan_exact",
+            "makespan_evolution",
+            "makespan_annealing",
+            "runtime_exact",
+            "runtime_evolution",
+            "runtime_annealing",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(
             sorted(
-                [{
-                    "instance": instance.name[:-3],
-                    "makespan_exact": sol_exact.makespan,
-                    "makespan_evolution": sol_evolution.makespan,
-                    "makespan_annealing": sol_annealing.makespan,
-                    "runtime_exact": sol_exact.runtime,
-                    "runtime_evolution": sol_evolution.runtime,
-                    "runtime_annealing": sol_annealing.runtime,
-                } for instance, sol_exact, sol_evolution, sol_annealing
-                  in zip(instances, solutions_exact, solutions_evolution, solutions_annealing)],
-                key=lambda x: instance_size_param(x["instance"]),
-            ),
-            headers="keys",
-        ))
+            [{
+                "instance": instance.name[:-3],
+                "makespan_exact": sol_exact.makespan,
+                "makespan_evolution": sol_evolution.makespan,
+                "makespan_annealing": sol_annealing.makespan,
+                "runtime_exact": sol_exact.runtime,
+                "runtime_evolution": sol_evolution.runtime,
+                "runtime_annealing": sol_annealing.runtime,
+            } for instance, sol_exact, sol_evolution, sol_annealing
+              in zip(instances, solutions_exact, solutions_evolution, solutions_annealing)],
+            key=lambda x: instance_size_param(x["instance"]),
+            )
+        )
 
 
 if __name__ == "__main__":
